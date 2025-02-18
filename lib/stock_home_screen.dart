@@ -8,7 +8,7 @@ class StockHomeScreen extends StatelessWidget {
   StockHomeScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, ) {
     final provider = Provider.of<StockProvider>(context);
 
     return Scaffold(
@@ -52,13 +52,14 @@ class StockHomeScreen extends StatelessWidget {
                 style: const TextStyle(color: Colors.white),
                 onSubmitted: (value) {
                   if (value.isNotEmpty) {
-                    provider.fetchStockData(value.toUpperCase());
-                    provider.fetchHistoricalData(value.toUpperCase());
+                    provider.fetchStockData(value.toUpperCase(),context);
+                    //provider.fetchHistoricalData(value.toUpperCase());
                   }
                 },
               ),
             ),
             const SizedBox(height: 16),
+            
             if (provider.isLoading)
               const CircularProgressIndicator()
             else if (provider.errorMessage.isNotEmpty)
@@ -66,6 +67,8 @@ class StockHomeScreen extends StatelessWidget {
                 provider.errorMessage,
                 style: const TextStyle(color: Colors.red),
               )
+            
+               
             else if (provider.selectedStock != null)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,9 +86,10 @@ class StockHomeScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                    
                     child: ListTile(
                       title: Text(
-                        provider.selectedStock!['symbol'],
+                        provider.selectedStock?['symbol'] ?? 'No Data',
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       subtitle: Column(

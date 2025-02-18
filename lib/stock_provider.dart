@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -10,43 +12,63 @@ class StockProvider extends ChangeNotifier {
   List<Map<String, dynamic>> historicalData = [];
 
   
-  Future<void> fetchStockData(String symbol) async {
-    isLoading = true;
-    errorMessage = '';
-    notifyListeners();
+  Future<void> fetchStockData(String symbol,BuildContext context) async {
+  isLoading = true;
+  errorMessage = '';
+  notifyListeners();
 
-    final url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=$symbol&apikey=LPDZGT82KITWOFBE';
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final stockData = data['Global Quote'];
+  final url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=$symbol&apikey=LPDZGT82KITWOFBE';
 
-        if (stockData != null) {
-         
-          selectedStock = {
-            'symbol': stockData['01. symbol'],
-'price': stockData['05. price'],
-'change': stockData['09. change'],
-'percentChange': stockData['10. change percent'],
-'companyName': stockData['companyName'] ?? 'Unknown', 
-'marketCap': stockData['marketCap'] ?? 'N/A', 
-'peRatio': stockData['peRatio'] ?? 'N/A', 
- 
-          };
-        } else {
-          errorMessage = 'Stock not found.';
-        }
-      } else {
-        errorMessage = 'Failed to fetch stock data.';
+  try {
+    final response = await http.get(Uri.parse(url)).timeout(
+      Duration(seconds: 10),  
+      onTimeout: () {
+        
+        throw TimeoutException('The request has timed out.');
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final stockData = data['Global Quote'];
+      print(data);
+
+      if (stockData.isEmpty) {
+   ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('No data found')),
+    );
+    
+    return;
+  }
+      if (stockData != null) {
+        selectedStock = {
+          'symbol': stockData['01. symbol'],
+          'price': stockData['05. price'],
+          'change': stockData['09. change'],
+          'percentChange': stockData['10. change percent'],
+          'companyName': stockData['companyName'] ?? 'Unknown', 
+          'marketCap': stockData['marketCap'] ?? 'N/A', 
+          'peRatio': stockData['peRatio'] ?? 'N/A',
+        };
+      } 
+      else {
+        errorMessage = 'Stock not found.';
       }
-    } catch (e) {
-      errorMessage = 'Error: $e';
+    } else {
+      errorMessage = 'Failed to fetch stock data.';
     }
 
-    isLoading = false;
-    notifyListeners();
+  } on TimeoutException catch (_) {
+    
+    errorMessage = 'The request timed out. Please try again later.';
+  } catch (e) {
+    errorMessage = 'Error: $e';
   }
+
+  isLoading = false;
+  notifyListeners();
+}
+
 
   
   Future<void> fetchHistoricalData(String symbol) async {
